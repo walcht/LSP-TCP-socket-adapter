@@ -1,0 +1,58 @@
+name: build-and-publish-dotnet-package
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    tags: [ 'v*.*.*' ]
+
+jobs:
+  build-publish-and-upload-to-release-page:
+
+    name: build-and-publish-apphost-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        arch: [ linux-aarch64, win64 ]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: install dotnet sdk
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.308
+
+    - name: install dependencies
+      run: dotnet restore
+
+    - name: setup envs on ubuntu-latest
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      shell: bash
+      run: |
+        echo "RELEASE_DIR=${{ github.workspace }}/bin/Release/net9.0/publish/" >> $GITHUB_ENV
+        echo "RELEASE_ARCHIVE_FILENAME=lsptcpadapter-${{ github.ref_name }}-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
+
+    - name: setup envs on windows-latest
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        echo "RELEASE_DIR=${{ github.workspace }}\bin\Release\net9.0\publish\" >> $env:GITHUB_ENV
+        echo "RELEASE_ARCHIVE_FILENAME=lsptcpadapter-${{ github.ref_name }}-${{ matrix.arch }}.tar.gz" >> $env:GITHUB_ENV
+
+
+    - name: build and publish
+      run: |
+        dotnet build --configuration Release --no-restore
+        dotnet publish -c Release --self-contained false
+    
+    - name: compress into a tar.gz archive
+      run: |
+        tar -czf ${{ env.RELEASE_ARCHIVE_FILENAME }} --directory ${{ env.RELEASE_DIR }} .
+
+    - name: create release page and upload artifact
+      if: github.ref_type == 'tag'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ${{ env.RELEASE_ARCHIVE_FILENAME }}
+        make_latest: true

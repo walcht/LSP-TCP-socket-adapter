@@ -1,0 +1,40 @@
+name: dotnet-format-runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '**.slx'
+
+jobs:
+  csharp-formatter:
+
+    name: dotnet-format
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: install dotnet sdk
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.308
+
+    - name: check if files have changed
+      id: gitcheck
+      run: echo ("ismodified"=$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)) >> $GITHUB_OUTPUT
+
+    - name: format csharp files
+      if: steps.gitcheck.outputs.ismodified == 'true'
+      run: dotnet format
+
+    - name: push changes
+      run: |
+        git config --global user.name "walcht"
+        git config --global user.email "walid.chtioui@ensi-uma.tn"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+        git commit -am "chore(bot): format csharp"
+        git push
