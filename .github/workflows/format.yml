@@ -25,7 +25,7 @@ jobs:
 
     - name: check if files have changed
       id: gitcheck
-      run: echo ("ismodified"=$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)) >> $GITHUB_OUTPUT
+      run: echo "ismodified"=$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi) >> $GITHUB_OUTPUT
 
     - name: format csharp files
       if: steps.gitcheck.outputs.ismodified == 'true'
