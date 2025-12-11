@@ -50,7 +50,7 @@ You can simply get the release binaries for your OS in the [releases page][relas
 
 In case you want to build this from the source then:
 
-1. Install [**dotnet v >= 9.0**][]
+1. Install [**dotnet v >= 9.0**][dotnet]
 
 1. In this repository's root, run:
 
@@ -62,7 +62,7 @@ In case you want to build this from the source then:
 
 ## Usage
 
-See the help message for usage details:
+See the help message for usage details `LSPTCPSocketAdapter.exe --help`:
 
 ```
 Description:
@@ -101,11 +101,13 @@ simply trigger the LS by opening a C# script in some valid project.
 
 - [ ] reduce (eliminate?) runtime allocations (i.e., constant number of allocations)
 - [ ] add tests
+- [ ] add option to capture time/performance statistics
+- [ ] add limit to internal buffers resizing
 
 ## License
 
 MIT License. See `license.txt`.
 
-[roslyn-ls]: 
-[dotnet]: 
-[releases]: 
+[roslyn-ls]: https://dev.azure.com/azure-public/vside/_artifacts/feed/vs-impl/NuGet/Microsoft.CodeAnalysis.LanguageServer.win-x64/overview
+[dotnet]: https://learn.microsoft.com/en-us/dotnet/core/install/
+[releases]: https://github.com/walcht/LSP-TCP-socket-adapter/releases
