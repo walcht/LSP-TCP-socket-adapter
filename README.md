@@ -91,7 +91,7 @@ Options:
 For example, assuming you have Roslyn LS installed on Windows, run:
 
   ```powershell
-  LSPUnixDomainSocketsAdapter.exe <ip> <port> dotnet "<roslyn-ls-path> --logLevel=Error --extensionLogDirectory=log --stdio" --mount=/mnt/c
+  LSPTCPSocketAdapter.exe <ip> <port> dotnet "<roslyn-ls-path> --logLevel=Error --extensionLogDirectory=log --stdio" --mount=/mnt/c
   ```
 
 And on WSL2, make sure that you have setup your Neovim LSP config so that it connects to the above IP and PORT, then
