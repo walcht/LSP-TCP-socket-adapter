@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LSAdapter;
 
@@ -169,6 +170,7 @@ partial class Program
     p.StartInfo.UseShellExecute = false;
     p.StartInfo.RedirectStandardInput = true;
     p.StartInfo.RedirectStandardOutput = true;
+    p.StartInfo.RedirectStandardError = true;
 
     p.Start();
 
@@ -300,7 +302,22 @@ partial class Program
     }
     finally
     {
-      // LS process cleanup
+      // LS process cleanup - drain stderr synchronously before killing/disposing
+      // so any crash text buffered by the child isn't lost to teardown races
+      try
+      {
+        string errOutput = p.StandardError.ReadToEnd();
+        if (!string.IsNullOrEmpty(errOutput))
+          Logger.LogError("[LS stderr]: {0}", errOutput);
+      }
+      catch (Exception e)
+      {
+        Logger.LogError("failed to drain LS stderr: {0}", e.Message);
+      }
+
+      if (p.HasExited)
+        Logger.LogError("LS process exited with code: {0}", p.ExitCode);
+
       p.Kill();
       p.Dispose();
 
@@ -556,7 +573,7 @@ partial class Program
         break;
 
       sb.Append(_body.AsSpan(startIdx, uriIdx - startIdx));
-      sb.Append($"\"file://{char.ToLower(windowsDrive)}:/");
+      sb.Append($"\"file:///{char.ToLower(windowsDrive)}:/");
 
       startIdx = uriIdx + URI_HEADER.Length;
     }
@@ -566,7 +583,14 @@ partial class Program
     string PATH_HEADER = $"\"{mountPath}/";
     sb.Replace(PATH_HEADER, $"\"{char.ToUpper(windowsDrive)}:/");
 
-    return $"Content-Length: {sb.Length}\r\n\r\n" + sb.ToString();
+    // WSL2's PID is meaningless to Roslyn LS running natively on Windows - it calls
+    // Process.GetProcessById() on this value to watch the client process, which throws
+    // (unobserved on a ThreadPool thread, which crashes the whole process) when the PID
+    // doesn't exist on Windows. Neutralize it - null is valid per the LSP spec and just
+    // means "don't monitor a client process".
+    string body = Regex.Replace(sb.ToString(), "\"processId\":\\d+", "\"processId\":null");
+
+    return $"Content-Length: {body.Length}\r\n\r\n" + body;
   }
 
   /// <summary>
